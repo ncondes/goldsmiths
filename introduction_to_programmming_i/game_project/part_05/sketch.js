@@ -1,6 +1,6 @@
 /**
  * The Game Project
- * Week 10 - Part 4
+ * Week 10 - Part 5
  * Nicolas Conde salazar
  */
 
@@ -8,13 +8,13 @@
 let floor;
 // object with character properties
 let character;
-// canyon position
-let canyon;
-// array with position of each tree drawed
+// array with position of each canyon drawn
+let canyons;
+// array with position of each tree drawn
 let trees;
-// array with the position of each cloud drawed
+// array with the position of each cloud drawn
 let clouds;
-// array with the position of each mountain drawed
+// array with the position of each mountain drawn
 let mountains;
 // array with collectable items props
 let collectables;
@@ -44,12 +44,12 @@ function setup() {
       rooted: false,
    };
 
-   canyon = {
-      pos: {
-         x1: 650,
-         x2: 800,
-      },
-   };
+   canyons = [
+      { pos: { x1: 650, x2: 800 } },
+      { pos: { x1: 1150, x2: 1300 } },
+      { pos: { x1: 2000, x2: 2150 } },
+      { pos: { x1: 2650, x2: 2800 } },
+   ];
 
    trees = [
       { pos: { x: 400 } },
@@ -133,40 +133,20 @@ function draw() {
    push();
    translate(camera.pos.x, 0);
 
-   // canyon
-   drawCanyon(canyon.pos.x1, canyon.pos.x2);
+   // canyons
+   drawCanyons();
 
-   /**
-    * note: why do we do 3 for loops instead of only 1.
-    * well, there are mainly 2 reasons:
-    *    1. what if the lengths of the arrays is different ?
-    *    2. in case that an element steps each other in position x,
-    *       the behavior that i want to see is draw all the elements
-    *       that i want in the background first and then the elements
-    *       that i want to see in front of it, and so on.
-    */
+   // mountains
+   drawMountains();
 
-   // for loop to iterate through the mountains array and draw it.
-   for (let i = 0; i < mountains.length; i++) {
-      drawMountains(mountains[i].pos.x);
-   }
+   // trees
+   drawTrees();
 
-   // for loop to iterate through the trees array and draw it.
-   for (let i = 0; i < trees.length; i++) {
-      drawTree(trees[i].pos.x);
-   }
+   // clouds
+   drawClouds();
 
-   // for loop to iterate through the clouds array and draw it.
-   for (let i = 0; i < clouds.length; i++) {
-      drawCloud(clouds[i].pos.x, clouds[i].pos.y);
-   }
-
-   // for loop to iterate through the collectable items array and draw it.
-   for (let i = 0; i < collectables.length; i++) {
-      if (!collectables[i].isFound) {
-         drawCollectable(collectables[i].pos.x);
-      }
-   }
+   // collectable items
+   drawCollectables();
 
    pop();
 
@@ -174,25 +154,7 @@ function draw() {
    drawScore();
 
    // character
-   if (
-      character.direction.left &&
-      (character.isJumping || character.isFalling)
-   ) {
-      jumpingLeft(character.pos.x, character.pos.y);
-   } else if (
-      character.direction.right &&
-      (character.isJumping || character.isFalling)
-   ) {
-      jumpingRight(character.pos.x, character.pos.y);
-   } else if (character.direction.left) {
-      walkingLeft(character.pos.x, character.pos.y);
-   } else if (character.direction.right) {
-      walkingRight(character.pos.x, character.pos.y);
-   } else if (character.isJumping || character.isFalling) {
-      jumpingForwards(character.pos.x, character.pos.y);
-   } else {
-      standingFront(character.pos.x, character.pos.y);
-   }
+   drawCharacter();
 
    // interaction
    characterMovement();
@@ -230,14 +192,20 @@ function gravity() {
 // function that handles if the character falls into the canyon
 function plummeting() {
    const offset = camera.pos.x;
+   let isCharacterInTheCanyon = false;
+
+   for (let i = 0; i < canyons.length; i++) {
+      if (
+         // add the offset according to the camera position to the canyon, so that the character can fall into it
+         character.pos.x - 15 > canyons[i].pos.x1 + offset &&
+         character.pos.x + 15 < canyons[i].pos.x2 + offset
+      ) {
+         isCharacterInTheCanyon = true;
+      }
+   }
 
    // if more than the half of the character is in the area of the canyon and the character is at the ground level too, then plummeting
-   if (
-      // add the offset according to the camera position to the canyon, so that the character can fall into it
-      character.pos.x - 15 > canyon.pos.x1 + offset &&
-      character.pos.x + 15 < canyon.pos.x2 + offset &&
-      character.pos.y >= floor.pos.y
-   ) {
+   if (isCharacterInTheCanyon && character.pos.y >= floor.pos.y) {
       character.direction = { left: false, right: false };
       character.isFalling = true;
       // root the character (deactivate the ability to move)
@@ -370,7 +338,7 @@ function drawCanyon(x1, x2) {
 }
 
 // draw a two mountains
-function drawMountains(x) {
+function drawMountain(x) {
    // big mountain
    fill(theme.mountains[0].green);
    noStroke();
@@ -483,6 +451,47 @@ function drawCollectable(x) {
    noStroke();
 }
 
+/**
+ * functions to draw background elements
+ */
+
+function drawCanyons() {
+   // for loop to iterate through the canyons array and draw it.
+   for (let i = 0; i < canyons.length; i++) {
+      drawCanyon(canyons[i].pos.x1, canyons[i].pos.x2);
+   }
+}
+
+function drawMountains() {
+   // for loop to iterate through the mountains array and draw it.
+   for (let i = 0; i < mountains.length; i++) {
+      drawMountain(mountains[i].pos.x);
+   }
+}
+
+function drawTrees() {
+   // for loop to iterate through the trees array and draw it.
+   for (let i = 0; i < trees.length; i++) {
+      drawTree(trees[i].pos.x);
+   }
+}
+
+function drawClouds() {
+   // for loop to iterate through the clouds array and draw it.
+   for (let i = 0; i < clouds.length; i++) {
+      drawCloud(clouds[i].pos.x, clouds[i].pos.y);
+   }
+}
+
+function drawCollectables() {
+   // for loop to iterate through the collectable items array and draw it.
+   for (let i = 0; i < collectables.length; i++) {
+      if (!collectables[i].isFound) {
+         drawCollectable(collectables[i].pos.x);
+      }
+   }
+}
+
 // draw a score with the items collected at the top right corner of the screen
 function drawScore() {
    const collectedItems = collectables.reduce((acc, curr) => {
@@ -508,6 +517,33 @@ function drawScore() {
    fill(theme.collectable.orange);
    triangle(width - 65 - 5, 33 + 4, width - 65 + 5, 33 + 4, width - 65, 33 - 6);
    noStroke();
+}
+
+/**
+ * character
+ */
+
+// draw character
+function drawCharacter() {
+   if (
+      character.direction.left &&
+      (character.isJumping || character.isFalling)
+   ) {
+      jumpingLeft(character.pos.x, character.pos.y);
+   } else if (
+      character.direction.right &&
+      (character.isJumping || character.isFalling)
+   ) {
+      jumpingRight(character.pos.x, character.pos.y);
+   } else if (character.direction.left) {
+      walkingLeft(character.pos.x, character.pos.y);
+   } else if (character.direction.right) {
+      walkingRight(character.pos.x, character.pos.y);
+   } else if (character.isJumping || character.isFalling) {
+      jumpingForwards(character.pos.x, character.pos.y);
+   } else {
+      standingFront(character.pos.x, character.pos.y);
+   }
 }
 
 // draw the character standing front

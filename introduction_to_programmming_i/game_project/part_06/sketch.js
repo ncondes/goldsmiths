@@ -1,6 +1,6 @@
 /**
  * The Game Project
- * Week 10 - Part 4
+ * Week 14 - Part 6
  * Nicolas Conde salazar
  */
 
@@ -8,13 +8,13 @@
 let floor;
 // object with character properties
 let character;
-// canyon position
-let canyon;
-// array with position of each tree drawed
+// array with position of each canyon drawn
+let canyons;
+// array with position of each tree drawn
 let trees;
-// array with the position of each cloud drawed
+// array with the position of each cloud drawn
 let clouds;
-// array with the position of each mountain drawed
+// array with the position of each mountain drawn
 let mountains;
 // array with collectable items props
 let collectables;
@@ -22,13 +22,100 @@ let collectables;
 let theme;
 // camera variable to set the scroll of the screen
 let camera;
+// value for items collected
+let game_score;
+// object with flagpole properties
+let flagpole;
+// lives counter
+let lives;
 
 function setup() {
    createCanvas(1024, 576);
 
    // initialize variables
+   lives = 3;
    floor = { pos: { y: 430 } };
 
+   startGame();
+}
+
+function draw() {
+   // sky
+   background(theme.sky.blue);
+   noStroke();
+
+   // ground
+   drawGround(0, width);
+
+   push();
+   translate(camera.pos.x, 0);
+
+   // canyons
+   drawCanyons();
+
+   // mountains
+   drawMountains();
+
+   // trees
+   drawTrees();
+
+   // clouds
+   drawClouds();
+
+   // collectable items
+   drawCollectables();
+
+   // flagpole
+   renderFlagpole(flagpole.pos.x);
+
+   pop();
+
+   // lives
+   drawLives();
+
+   // score
+   drawScore();
+
+   // text
+   if (drawText()) return;
+
+   // character
+   drawCharacter();
+
+   // interaction
+   characterMovement();
+   collectItems();
+   gravity();
+   plummeting();
+   checkPlayerDie();
+
+   if (!flagpole.isReached) {
+      checkFlagpole();
+   }
+}
+
+// listener docs
+// https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener
+// window docs
+// https://developer.mozilla.org/en-US/docs/Web/API/Window/location
+
+// note: i decided to use this method because once we do a return in the draw function the game interaction functions are disabled
+
+// listener that checks if the keyup event occurs
+document.addEventListener('keyup', (event) => {
+   // validate if the key pressed is the 'space' and if the player is run out of lives or completed the level
+   if (event.code === 'Space' && (lives === 0 || flagpole.isReached)) {
+      // use the window object to reload the page (easy way to restart the game)
+      window.location.reload();
+   }
+});
+
+/**
+ * functions for game interactions
+ */
+
+// start game
+function startGame() {
    character = {
       pos: {
          x: 500,
@@ -44,12 +131,12 @@ function setup() {
       rooted: false,
    };
 
-   canyon = {
-      pos: {
-         x1: 650,
-         x2: 800,
-      },
-   };
+   canyons = [
+      { pos: { x1: 650, x2: 800 } },
+      { pos: { x1: 1150, x2: 1300 } },
+      { pos: { x1: 2000, x2: 2150 } },
+      { pos: { x1: 2650, x2: 2800 } },
+   ];
 
    trees = [
       { pos: { x: 400 } },
@@ -78,9 +165,7 @@ function setup() {
 
    mountains = [
       { pos: { x: 150 } },
-
       { pos: { x: 1600 } },
-
       { pos: { x: 3100 } },
    ];
 
@@ -98,6 +183,15 @@ function setup() {
       { pos: { x: 2950 }, isFound: false },
    ];
 
+   game_score = 0;
+
+   flagpole = {
+      pos: { x: 3500 },
+      isReached: false,
+      raiseFlag: false,
+      flag: [floor.pos.y - 5, floor.pos.y - 45, floor.pos.y - 25],
+   };
+
    theme = {
       canyon: { lightBrown: '#b79576', brown: '#ab7434', darkBrown: '#a24f2c' },
       character: { black: '#182225', yellow: '#efd81d', skin: '#fbba8a' },
@@ -106,7 +200,14 @@ function setup() {
          darkYellow: '#f6a303',
          orange: '#e7791e',
       },
+      flagpole: {
+         gray: '#a7a6a5',
+         darkGray: '#505050',
+         green: '#5eb750',
+         red: '#e73d2a',
+      },
       ground: { green: '#5ead2a' },
+      lives: { red: '#ec4134' },
       mountains: [
          { green: '#5E865C', darkGreen: '#344432' },
          { green: '#3d613b', darkGreen: '#1F2F1E' },
@@ -115,95 +216,8 @@ function setup() {
       tree: { brown: '#7c5b41', green: '#2ec654', darkGreen: '#0b492c' },
    };
 
-   camera = {
-      pos: {
-         x: 0,
-      },
-   };
+   camera = { pos: { x: 0 } };
 }
-
-function draw() {
-   // sky
-   background(theme.sky.blue);
-   noStroke();
-
-   // ground
-   drawGround(0, width);
-
-   push();
-   translate(camera.pos.x, 0);
-
-   // canyon
-   drawCanyon(canyon.pos.x1, canyon.pos.x2);
-
-   /**
-    * note: why do we do 3 for loops instead of only 1.
-    * well, there are mainly 2 reasons:
-    *    1. what if the lengths of the arrays is different ?
-    *    2. in case that an element steps each other in position x,
-    *       the behavior that i want to see is draw all the elements
-    *       that i want in the background first and then the elements
-    *       that i want to see in front of it, and so on.
-    */
-
-   // for loop to iterate through the mountains array and draw it.
-   for (let i = 0; i < mountains.length; i++) {
-      drawMountains(mountains[i].pos.x);
-   }
-
-   // for loop to iterate through the trees array and draw it.
-   for (let i = 0; i < trees.length; i++) {
-      drawTree(trees[i].pos.x);
-   }
-
-   // for loop to iterate through the clouds array and draw it.
-   for (let i = 0; i < clouds.length; i++) {
-      drawCloud(clouds[i].pos.x, clouds[i].pos.y);
-   }
-
-   // for loop to iterate through the collectable items array and draw it.
-   for (let i = 0; i < collectables.length; i++) {
-      if (!collectables[i].isFound) {
-         drawCollectable(collectables[i].pos.x);
-      }
-   }
-
-   pop();
-
-   // i did this as an extra, going the extra mile
-   drawScore();
-
-   // character
-   if (
-      character.direction.left &&
-      (character.isJumping || character.isFalling)
-   ) {
-      jumpingLeft(character.pos.x, character.pos.y);
-   } else if (
-      character.direction.right &&
-      (character.isJumping || character.isFalling)
-   ) {
-      jumpingRight(character.pos.x, character.pos.y);
-   } else if (character.direction.left) {
-      walkingLeft(character.pos.x, character.pos.y);
-   } else if (character.direction.right) {
-      walkingRight(character.pos.x, character.pos.y);
-   } else if (character.isJumping || character.isFalling) {
-      jumpingForwards(character.pos.x, character.pos.y);
-   } else {
-      standingFront(character.pos.x, character.pos.y);
-   }
-
-   // interaction
-   characterMovement();
-   collectItems();
-   gravity();
-   plummeting();
-}
-
-/**
- * functions for game interactions
- */
 
 // function that handles gravity in our game
 function gravity() {
@@ -230,14 +244,20 @@ function gravity() {
 // function that handles if the character falls into the canyon
 function plummeting() {
    const offset = camera.pos.x;
+   let isCharacterInTheCanyon = false;
+
+   for (let i = 0; i < canyons.length; i++) {
+      if (
+         // add the offset according to the camera position to the canyon, so that the character can fall into it
+         character.pos.x - 15 > canyons[i].pos.x1 + offset &&
+         character.pos.x + 15 < canyons[i].pos.x2 + offset
+      ) {
+         isCharacterInTheCanyon = true;
+      }
+   }
 
    // if more than the half of the character is in the area of the canyon and the character is at the ground level too, then plummeting
-   if (
-      // add the offset according to the camera position to the canyon, so that the character can fall into it
-      character.pos.x - 15 > canyon.pos.x1 + offset &&
-      character.pos.x + 15 < canyon.pos.x2 + offset &&
-      character.pos.y >= floor.pos.y
-   ) {
+   if (isCharacterInTheCanyon && character.pos.y >= floor.pos.y) {
       character.direction = { left: false, right: false };
       character.isFalling = true;
       // root the character (deactivate the ability to move)
@@ -277,25 +297,66 @@ function characterMovement() {
    }
 }
 
-// function that handles collecting an item by the character
-function collectItems() {
-   // how close has to be the character to pick up the item
-   const distance = 30;
+// function that checks if the character is close enough to an element
+function characterIsCloseEnoughTo(element, distance = 30) {
+   // distance is how close has to be the character to pick up the item, by default is 30
    const offset = camera.pos.x;
 
+   const result =
+      dist(
+         // add the offset according to the camera position to the element position, so that the character can pick it up
+         element + offset,
+         floor.pos.y,
+         character.pos.x,
+         character.pos.y
+      ) < distance;
+
+   return result;
+}
+
+// function that handles collecting an item by the character
+function collectItems() {
    for (let i = 0; i < collectables.length; i++) {
       // check if the character is close enough to pick up the item
-      if (
-         dist(
-            // add the offset according to the camera position to the collectable position, so that the character can pick it up
-            collectables[i].pos.x + offset,
-            floor.pos.y,
-            character.pos.x,
-            character.pos.y
-         ) < distance
-      ) {
+      if (characterIsCloseEnoughTo(collectables[i].pos.x)) {
          collectables[i].isFound = true;
       }
+   }
+
+   // check the collectable items that were found, if the item was found increase the score
+   game_score = collectables.reduce((acc, curr) => {
+      curr.isFound ? acc++ : null;
+      return acc;
+   }, 0);
+}
+
+// function that handles when character reach the flagpole
+function checkFlagpole() {
+   // check if the character is close enough to the flag
+   if (characterIsCloseEnoughTo(flagpole.pos.x, 20)) {
+      flagpole.raiseFlag = true;
+   }
+
+   if (flagpole.raiseFlag) {
+      // raise the flag if is not in the top position
+      if (flagpole.flag[1] > floor.pos.y - 145) {
+         flagpole.flag[0] -= 10;
+         flagpole.flag[1] -= 10;
+         flagpole.flag[2] -= 10;
+      }
+
+      // once the flag reach the top position, set to true the isReached value
+      if (flagpole.flag[1] === floor.pos.y - 145) {
+         flagpole.isReached = true;
+      }
+   }
+}
+
+// function that handles character's lives
+function checkPlayerDie() {
+   if (character.pos.y > height + 500 && lives > 0) {
+      lives--;
+      if (lives > 0) startGame();
    }
 }
 
@@ -370,7 +431,7 @@ function drawCanyon(x1, x2) {
 }
 
 // draw a two mountains
-function drawMountains(x) {
+function drawMountain(x) {
    // big mountain
    fill(theme.mountains[0].green);
    noStroke();
@@ -483,18 +544,79 @@ function drawCollectable(x) {
    noStroke();
 }
 
+// draw flagpole
+function renderFlagpole(x) {
+   // pole
+   stroke(theme.flagpole.darkGray);
+   fill(theme.flagpole.gray);
+   rect(x - 2.5, floor.pos.y, 5, -150);
+   ellipse(x, floor.pos.y - 150, 10);
+
+   // flag
+   fill(flagpole.isReached ? theme.flagpole.green : theme.flagpole.red);
+   triangle(
+      x + 4,
+      flagpole.flag[0],
+      x + 4,
+      flagpole.flag[1],
+      x + 75,
+      flagpole.flag[2]
+   );
+}
+
+// draw heart
+function drawHeart(x) {
+   const size = 25;
+
+   beginShape();
+   fill(theme.lives.red);
+   vertex(x, 20);
+   bezierVertex(
+      x - size / 2,
+      20 - size / 2,
+      x - size,
+      20 + size / 3,
+      x,
+      20 + size
+   );
+   bezierVertex(x + size, 20 + size / 3, x + size / 2, 20 - size / 2, x, 20);
+   endShape(CLOSE);
+}
+
+// display 'game over' or 'level complete'
+function drawText() {
+   // variable to indicate if we should stop the game (return in draw function)
+   let stop = false;
+   let message = '';
+
+   // set message according to the condition established
+   if (lives === 0) message = `GAME OVER`;
+   if (flagpole.isReached) message = 'LEVEL COMPLETE';
+
+   if (message) {
+      fill(0, 0, 0, 125);
+      rect(0, 0, width, height);
+
+      fill(255);
+      textSize(48);
+      textAlign(CENTER);
+      text(message, width / 2, height / 2 - 20);
+      textSize(24);
+      text('Press space to continue', width / 2, height / 2 + 20);
+
+      stop = true;
+   }
+
+   return stop;
+}
+
 // draw a score with the items collected at the top right corner of the screen
 function drawScore() {
-   const collectedItems = collectables.reduce((acc, curr) => {
-      curr.isFound ? acc++ : null;
-      return acc;
-   }, 0);
-
    textSize(20);
    fill(0);
    stroke(theme.collectable.darkYellow);
    strokeWeight(1);
-   text(`${collectedItems}`, width - 40, 40);
+   text(`${game_score}`, width - 40, 40);
 
    noStroke();
    fill(theme.collectable.yellow);
@@ -508,6 +630,81 @@ function drawScore() {
    fill(theme.collectable.orange);
    triangle(width - 65 - 5, 33 + 4, width - 65 + 5, 33 + 4, width - 65, 33 - 6);
    noStroke();
+}
+
+/**
+ * functions to draw background elements (loops)
+ */
+
+function drawCanyons() {
+   // for loop to iterate through the canyons array and draw it.
+   for (let i = 0; i < canyons.length; i++) {
+      drawCanyon(canyons[i].pos.x1, canyons[i].pos.x2);
+   }
+}
+
+function drawMountains() {
+   // for loop to iterate through the mountains array and draw it.
+   for (let i = 0; i < mountains.length; i++) {
+      drawMountain(mountains[i].pos.x);
+   }
+}
+
+function drawTrees() {
+   // for loop to iterate through the trees array and draw it.
+   for (let i = 0; i < trees.length; i++) {
+      drawTree(trees[i].pos.x);
+   }
+}
+
+function drawClouds() {
+   // for loop to iterate through the clouds array and draw it.
+   for (let i = 0; i < clouds.length; i++) {
+      drawCloud(clouds[i].pos.x, clouds[i].pos.y);
+   }
+}
+
+function drawCollectables() {
+   // for loop to iterate through the collectable items array and draw it.
+   for (let i = 0; i < collectables.length; i++) {
+      if (!collectables[i].isFound) {
+         drawCollectable(collectables[i].pos.x);
+      }
+   }
+}
+
+function drawLives() {
+   const x = [30, 65, 100];
+   for (let i = 0; i < lives; i++) {
+      drawHeart(x[i]);
+   }
+}
+
+/**
+ * character
+ */
+
+// draw character
+function drawCharacter() {
+   if (
+      character.direction.left &&
+      (character.isJumping || character.isFalling)
+   ) {
+      jumpingLeft(character.pos.x, character.pos.y);
+   } else if (
+      character.direction.right &&
+      (character.isJumping || character.isFalling)
+   ) {
+      jumpingRight(character.pos.x, character.pos.y);
+   } else if (character.direction.left) {
+      walkingLeft(character.pos.x, character.pos.y);
+   } else if (character.direction.right) {
+      walkingRight(character.pos.x, character.pos.y);
+   } else if (character.isJumping || character.isFalling) {
+      jumpingForwards(character.pos.x, character.pos.y);
+   } else {
+      standingFront(character.pos.x, character.pos.y);
+   }
 }
 
 // draw the character standing front
