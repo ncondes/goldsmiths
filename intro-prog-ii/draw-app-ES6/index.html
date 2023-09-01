@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- css -->
+    <link rel="stylesheet" href="style.css" />
+    <!-- font awesome -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+
+    <!-- p5 -->
+    <script src="./lib/p5.js"></script>
+    <!-- js -->
+    <script src="sketch.js"></script>
+    <!-- tools -->
+    <script src="./classes/tools/Toolbox.js"></script>
+    <script src="./classes/tools/Pencil.js"></script>
+    <script src="./classes/tools/Eraser.js"></script>
+    <script src="./classes/tools/Shapes.js"></script>
+    <script src="./classes/tools/Spray.js"></script>
+    <script src="./classes/tools/Mirror.js"></script>
+    <script src="./classes/tools/Stamp.js"></script>
+    <script src="./classes/tools/Colours.js"></script>
+    <!-- helpers -->
+    <script src="./classes/helpers/Listeners.js"></script>
+    <script src="./classes/helpers/Helpers.js"></script>
+
+    <title>Sketch</title>
+  </head>
+  <body>
+    <div class="wrapper">
+      <!-- header -->
+      <div class="header">
+        <h1>Sketch</h1>
+        <div>
+          <button class="header__button" id="undo-button">
+            <i class="fa-solid fa-rotate-left"></i><span>Undo</span>
+          </button>
+          <button class="header__button" id="redo-button">
+            <i class="fa-solid fa-rotate-right"></i><span>Redo</span>
+          </button>
+          <button class="header__button" id="clear-button">
+            <i class="fa-regular fa-trash-can"></i><span>Clear</span>
+          </button>
+          <button class="header__button" id="save-button">
+            <i class="fa-regular fa-floppy-disk"></i> <span>Save</span>
+          </button>
+        </div>
+      </div>
+      <!-- content -->
+      <div class="content">
+        <!-- sidebar -->
+        <div class="sidebar" id="sidebar"></div>
+        <!-- canvas -->
+        <div class="canvas-container">
+          <div class="canvas" id="canvas"></div>
+        </div>
+        <!-- options -->
+        <div class="options" id="options"></div>
+      </div>
+    </div>
+  </body>
+</html>
